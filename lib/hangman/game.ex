@@ -107,7 +107,7 @@ Here's this module being exercised from an iex session:
 
     iex(13)> { game, state, guess } = G.make_move(game, "b")
     . . .
-    iex(14)> state                                          
+    iex(14)> state
     :bad_guess
 
     iex(15)> { game, state, guess } = G.make_move(game, "f")
@@ -142,6 +142,12 @@ Here's this module being exercised from an iex session:
 
   @spec new_game :: state
   def new_game do
+    %{
+      word: (Hangman.Dictionary.random_word()),
+      letters_left: left_numbers((Hangman.Dictionary.random_word())),
+      comp_guess: [],
+      turns_left: 10
+     }
   end
 
 
@@ -152,6 +158,12 @@ Here's this module being exercised from an iex session:
   """
   @spec new_game(binary) :: state
   def new_game(word) do
+    %{
+      word: word,
+      letters_left: left_numbers(word),
+      comp_guess: [],
+      turns_left: 10
+     }
   end
 
 
@@ -177,8 +189,11 @@ Here's this module being exercised from an iex session:
 
   @spec make_move(state, ch) :: { state, atom, optional_ch }
   def make_move(state, guess) do
+    word_guess = String.codepoints(state.word) |> Enum.member?(guess)
+    status = manage_guess(state, word_guess)
+    state = change_in_state(state, word_guess, guess)
+    {state, status, guess}
   end
-
 
   @doc """
   `len = Hangman.Game.word_length(game)`
@@ -187,6 +202,7 @@ Here's this module being exercised from an iex session:
   """
   @spec word_length(state) :: integer
   def word_length(%{ word: word }) do
+    String.length(word)
   end
 
   @doc """
@@ -199,6 +215,7 @@ Here's this module being exercised from an iex session:
 
   @spec letters_used_so_far(state) :: [ binary ]
   def letters_used_so_far(state) do
+    state.comp_guess
   end
 
   @doc """
@@ -211,6 +228,7 @@ Here's this module being exercised from an iex session:
 
   @spec turns_left(state) :: integer
   def turns_left(state) do
+    state.turns_left
   end
 
   @doc """
@@ -224,6 +242,9 @@ Here's this module being exercised from an iex session:
 
   @spec word_as_string(state, boolean) :: binary
   def word_as_string(state, reveal \\ false) do
+    display_the_word(state, reveal)
+    |> String.codepoints
+    |> Enum.join(" ")
   end
 
   ###########################
@@ -231,5 +252,46 @@ Here's this module being exercised from an iex session:
   ###########################
 
   # Your private functions go here
+  defp display_the_word(state, true) do
+    state.word
+  end
 
+  defp display_the_word(state, false) do
+    guessed_letters = [" " | state.comp_guess] |> Enum.join
+    String.replace(state.word, ~r/[^#{guessed_letters}]/, "_")
+  end
+
+  defp change_in_state(state, true, guess) do
+    change_in_state(state, guess)
+  end
+
+  defp change_in_state(state, false, guess) do
+    state = %{state | turns_left: state.turns_left - 1}
+    change_in_state(state, guess)
+  end
+
+  defp change_in_state(state, guess) do
+    left_num = left_numbers(state.word)
+    %{state | comp_guess: [guess | state.comp_guess], letters_left: left_num}
+  end
+
+  defp left_numbers(word) do
+    Enum.count(Enum.uniq(String.codepoints(word)))
+  end
+  #I tried to swap this condition to change if and else in-order to solve the failed condition
+    defp manage_guess(state, true) do
+    if String.codepoints(state.word) |>
+    Enum.all?(&(Enum.member?(state.comp_guess, &1))) do
+      :won
+    else
+      :good_guess
+    end
+  end
+
+  defp manage_guess(%{turns_left: 0}, false) do
+   :lost
+  end
+  defp manage_guess(%{turns_left: turns_left}, false) do
+   :bad_guess
+  end
  end

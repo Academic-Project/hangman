@@ -46,23 +46,23 @@ defmodule Hangman.HumanPlayer do
 
 
   def get_guess(state) do
-    guessed = state |> Game.letters_used_so_far
-    if length(guessed) > 0 do
-      IO.puts "Letters used so far: #{ guessed |> Enum.join(", ")}"
+    comp_guess = state |> Game.letters_used_so_far
+    if length(comp_guess) > 0 do
+      IO.puts "Letters used so far: #{ comp_guess |> Enum.join(", ")}"
     end
     guess_until_valid(state)
   end
 
   def guess_until_valid(state) do
     guess = IO.gets("Next letter:   ") |> String.downcase |> String.trim
-    guessed = state |> Game.letters_used_so_far
+    comp_guess = state |> Game.letters_used_so_far
 
     cond do
       String.length(guess) != 1 ->
         IO.puts "please enter a single character"
         guess_until_valid(state)
 
-      guess in guessed ->
+      guess in comp_guess ->
         IO.puts "you already tried '#{guess}'"
         guess_until_valid(state)
 
@@ -232,7 +232,3 @@ defmodule Hangman.HumanPlayer do
   end
 
 end
-
-
-
-
